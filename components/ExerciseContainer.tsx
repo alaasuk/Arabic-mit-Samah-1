@@ -1,4 +1,5 @@
 import React from 'react';
+import { triggerVibration } from '../App';
 
 interface ExerciseContainerProps {
   title: string;
@@ -24,9 +25,12 @@ const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ title, onBack, ch
 
   return (
     <div className="bg-slate-800 p-4 sm:p-8 rounded-2xl shadow-2xl w-full max-w-3xl mx-auto h-[90vh] max-h-[700px] flex flex-col">
-        <header className="relative flex justify-between items-center w-full mb-6 min-h-[44px] flex-shrink-0 gap-4">
+        <header className="relative flex justify-between items-center w-full mb-6 min-h-[44px] flex-shrink-0">
             <button
-                onClick={onBack}
+                onClick={() => {
+                    triggerVibration();
+                    onBack();
+                }}
                 className="bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-full transition-colors duration-300 flex items-center justify-center w-11 h-11 sm:w-auto sm:h-auto sm:px-4 sm:py-2 sm:gap-2 flex-shrink-0"
                 aria-label="عودة"
             >
@@ -36,7 +40,7 @@ const ExerciseContainer: React.FC<ExerciseContainerProps> = ({ title, onBack, ch
                 <span className="hidden sm:inline">عودة</span>
             </button>
 
-            <h2 className="text-2xl sm:text-3xl font-bold text-green-400 text-center truncate">
+            <h2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 sm:w-1/2 text-2xl sm:text-3xl font-bold text-green-400 text-center truncate">
                 {title}
             </h2>
 

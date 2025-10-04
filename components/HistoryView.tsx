@@ -1,5 +1,5 @@
 import React from 'react';
-import { HistoryState, View, FillBlankHistoryItem, MCQHistoryItem, ReadingHistoryItem } from '../types';
+import { HistoryState, View, FillBlankHistoryItem, MCQHistoryItem, ReadingHistoryItem, DictationHistoryItem, SentenceBuilderHistoryItem } from '../types';
 import ExerciseContainer from './ExerciseContainer';
 
 interface HistoryViewProps {
@@ -93,13 +93,62 @@ const renderReadingItem = (item: ReadingHistoryItem, index: number, total: numbe
     );
 };
 
+const renderDictationItem = (item: DictationHistoryItem, index: number, total: number) => {
+    const isCorrect = item.writtenAnswer === item.exercise.word;
+    return (
+        <div key={index} className="bg-slate-900/50 p-4 rounded-lg space-y-2">
+            <p className="text-lg">
+                <span className="font-bold text-slate-500 ml-2">{total - index}.</span>
+                الكلمة الصحيحة هي: <span className="font-bold text-green-400">{item.exercise.word}</span>
+            </p>
+            <div className="pr-6">
+                {isCorrect ? (
+                    <p className="text-green-300">لقد كتبتها بشكل صحيح: <span className="font-semibold">{item.writtenAnswer}</span></p>
+                ) : (
+                    <p className="text-red-300">
+                        لقد كتبت: <span className="font-semibold line-through">{item.writtenAnswer}</span>
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+}
+
+const renderSentenceBuilderItem = (item: SentenceBuilderHistoryItem, index: number, total: number) => {
+    const normalizeSentence = (str: string) => {
+        return str.trim().replace(/[.?!؟,]*$/, '');
+    };
+    const isCorrect = normalizeSentence(item.builtSentence) === normalizeSentence(item.exercise.correctSentence);
+    return (
+        <div key={index} className="bg-slate-900/50 p-4 rounded-lg space-y-2">
+             <p className="text-lg">
+                <span className="font-bold text-slate-500 ml-2">{total - index}.</span>
+                 الجملة الصحيحة هي: <span className="font-bold text-green-400">{item.exercise.correctSentence}</span>
+            </p>
+            <div className="pr-6">
+                {isCorrect ? (
+                    <p className="text-green-300">لقد رتبتها بشكل صحيح!</p>
+                ) : (
+                     <p className="text-red-300">
+                        ترتيبك كان: <span className="font-semibold">{item.builtSentence}</span>
+                    </p>
+                )}
+                 <p className="font-bold text-yellow-500 text-sm mt-1">💡 الشرح: <span className="font-normal text-slate-300">{item.exercise.explanation}</span></p>
+            </div>
+        </div>
+    );
+}
 
 const HistoryView: React.FC<HistoryViewProps> = ({ onBack, history }) => {
-    const fillInBlankHistory = history[View.FILL_IN_BLANK];
-    const mcqHistory = history[View.MULTIPLE_CHOICE];
-    const readingHistory = history[View.READING_COMPREHENSION];
+    const historySections = [
+        { title: 'تمارين املأ الفراغ', history: history[View.FILL_IN_BLANK], renderer: renderFillInTheBlankItem },
+        { title: 'تمارين اختر من متعدد', history: history[View.MULTIPLE_CHOICE], renderer: renderMCQItem },
+        { title: 'تمارين تقوية القراءة', history: history[View.READING_COMPREHENSION], renderer: renderReadingItem },
+        { title: 'تمارين الإملاء', history: history[View.DICTATION], renderer: renderDictationItem },
+        { title: 'تمارين بناء الجمل', history: history[View.SENTENCE_BUILDER], renderer: renderSentenceBuilderItem },
+    ];
     
-    const isEmpty = fillInBlankHistory.length === 0 && mcqHistory.length === 0 && readingHistory.length === 0;
+    const isEmpty = historySections.every(section => section.history.length === 0);
 
   return (
     <ExerciseContainer title="سجل التمارين المحلولة" onBack={onBack}>
@@ -111,30 +160,16 @@ const HistoryView: React.FC<HistoryViewProps> = ({ onBack, history }) => {
             </div>
         ) : (
             <div className="space-y-8">
-                {fillInBlankHistory.length > 0 && (
-                    <section>
-                        <h3 className="text-xl font-bold text-green-400 mb-4 border-b-2 border-slate-700 pb-2">تمارين املأ الفراغ</h3>
-                        <div className="space-y-4">
-                            {fillInBlankHistory.map((item, index) => renderFillInTheBlankItem(item, index, fillInBlankHistory.length))}
-                        </div>
-                    </section>
-                )}
-                {mcqHistory.length > 0 && (
-                    <section>
-                        <h3 className="text-xl font-bold text-green-400 mb-4 border-b-2 border-slate-700 pb-2">تمارين اختر من متعدد</h3>
-                        <div className="space-y-4">
-                            {mcqHistory.map((item, index) => renderMCQItem(item, index, mcqHistory.length))}
-                        </div>
-                    </section>
-                )}
-                {readingHistory.length > 0 && (
-                    <section>
-                        <h3 className="text-xl font-bold text-green-400 mb-4 border-b-2 border-slate-700 pb-2">تمارين تقوية القراءة</h3>
-                        <div className="space-y-4">
-                            {readingHistory.map((item, index) => renderReadingItem(item, index, readingHistory.length))}
-                        </div>
-                    </section>
-                )}
+                {historySections.map(section => (
+                    section.history.length > 0 && (
+                        <section key={section.title}>
+                            <h3 className="text-xl font-bold text-green-400 mb-4 border-b-2 border-slate-700 pb-2">{section.title}</h3>
+                            <div className="space-y-4">
+                                {section.history.map((item, index) => (section.renderer as any)(item, index, section.history.length))}
+                            </div>
+                        </section>
+                    )
+                ))}
             </div>
         )}
     </ExerciseContainer>

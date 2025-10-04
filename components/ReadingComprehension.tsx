@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { generateReadingComprehension } from '../services/geminiService';
-import { ReadingExercise, ReadingHistoryItem, View } from '../types';
+import { ReadingExercise, ReadingHistoryItem, HistoryItem, View } from '../types';
 import LoadingSpinner from './LoadingSpinner';
 import ExerciseContainer from './ExerciseContainer';
+import { triggerVibration } from '../App';
 
 interface ReadingComprehensionProps {
   onBack: () => void;
-  addPoints: (amount: number) => void;
-  addHistoryItem: (exerciseType: View.READING_COMPREHENSION, item: ReadingHistoryItem) => void;
+  onCorrectAnswer: () => void;
+  onIncorrectAnswer: () => void;
+  addHistoryItem: (item: HistoryItem) => void;
 }
 
 const TOTAL_EXERCISES = 100;
 
-const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ onBack, addPoints, addHistoryItem }) => {
+const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ onBack, onCorrectAnswer, onIncorrectAnswer, addHistoryItem }) => {
   const [exercise, setExercise] = useState<ReadingExercise | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [exerciseCount, setExerciseCount] = useState(1);
@@ -22,6 +25,7 @@ const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ onBack, add
 
   const fetchExercise = useCallback(async () => {
     setLoading(true);
+    setError(null);
     setExercise(null);
     setSelectedAnswer(null);
     setIsSubmitted(false);
@@ -34,6 +38,7 @@ const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ onBack, add
       setExercise({ ...newExercise, options: shuffledOptions });
     } catch (error) {
       console.error("Failed to generate reading comprehension exercise:", error);
+      setError("عذراً، حدث خطأ أثناء تحضير التدريب. يرجى المحاولة مرة أخرى.");
     } finally {
       setLoading(false);
     }
@@ -47,21 +52,22 @@ const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ onBack, add
   }, [fetchExercise]);
 
   const handleNextExercise = () => {
-    if (exercise && selectedAnswer) {
-      const historyItem: ReadingHistoryItem = { exercise, selectedAnswer };
-      addHistoryItem(View.READING_COMPREHENSION, historyItem);
-    }
+    triggerVibration();
     setExerciseCount(prev => (prev % TOTAL_EXERCISES) + 1);
-    fetchExercise();
   };
 
   const handleOptionClick = (option: string) => {
-    if (isSubmitted) return;
+    if (isSubmitted || !exercise) return;
+    triggerVibration();
     setSelectedAnswer(option);
     setIsSubmitted(true);
-    if (option === exercise?.correctAnswer) {
-      addPoints(10);
+    if (option === exercise.correctAnswer) {
+      onCorrectAnswer();
+    } else {
+      onIncorrectAnswer();
     }
+    const historyItem: ReadingHistoryItem = { type: View.READING_COMPREHENSION, exercise, selectedAnswer: option };
+    addHistoryItem(historyItem);
   };
 
   const getButtonClass = (option: string) => {
@@ -78,6 +84,7 @@ const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ onBack, add
   };
 
   const speakText = (text: string) => {
+    triggerVibration();
     if (isSpeaking) {
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
@@ -103,7 +110,15 @@ const ReadingComprehension: React.FC<ReadingComprehensionProps> = ({ onBack, add
     <ExerciseContainer title="تقوية القراءة" onBack={onBack} exerciseNumber={exerciseCount}>
       <div className="flex-grow flex flex-col justify-center">
         {loading && <LoadingSpinner />}
-        {!loading && exercise && (
+        {error && (
+            <div className="text-center flex flex-col items-center gap-4">
+                <p className="text-red-400 text-lg">{error}</p>
+                <button onClick={fetchExercise} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    حاول مرة أخرى
+                </button>
+            </div>
+        )}
+        {!loading && !error && exercise && (
           <div className="w-full text-center flex flex-col items-center gap-4">
               <div className="relative bg-slate-900 p-4 rounded-xl border border-slate-700 w-full">
                   <button 

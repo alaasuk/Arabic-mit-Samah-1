@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { FillBlankExercise, MCQExercise, ReadingExercise, EducationalCard } from '../types';
+import { FillBlankExercise, MCQExercise, ReadingExercise, EducationalCard, DictationExercise, SentenceBuilderExercise } from '../types';
 
 // FIX: Per @google/genai guidelines, the API key must be obtained exclusively from process.env.API_KEY. This also resolves the TypeScript error related to import.meta.env.
-const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+const apiKey = process.env.API_KEY;
 
 if (!apiKey) {
     throw new Error("API_KEY environment variable is not set");
@@ -148,4 +148,58 @@ export async function generateEducationalCard(level: DifficultyLevel): Promise<E
 
   const json = JSON.parse(response.text);
   return json as EducationalCard;
+}
+
+
+export async function generateDictationExercise(level: DifficultyLevel): Promise<DictationExercise> {
+  const topic = getRandomTopic();
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: `${BASE_PROMPT(topic, level)} صممي تمرين إملاء. قدمي كلمة عربية واحدة مناسبة للعمر ومستوى الصعوبة. يجب أن تكون الكلمة شائعة ومفيدة. وقدمي جملة مثال بسيطة توضح استخدام الكلمة.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          word: { type: Type.STRING, description: "الكلمة العربية المراد إملائها." },
+          exampleSentence: { type: Type.STRING, description: "جملة مثال تستخدم الكلمة." }
+        },
+        required: ["word", "exampleSentence"],
+      },
+    },
+  });
+
+  const json = JSON.parse(response.text);
+  return json as DictationExercise;
+}
+
+export async function generateSentenceBuilderExercise(level: DifficultyLevel): Promise<SentenceBuilderExercise> {
+  const topic = getRandomTopic();
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: `${BASE_PROMPT(topic, level)} صممي تمرين 'بناء الجملة'. قدمي جملة عربية صحيحة ومفيدة (3-6 كلمات). ثم قدمي نفس الكلمات في مصفوفة بترتيب عشوائي. وقدمي شرحاً بسيطاً عن تركيب الجملة الصحيح أو القاعدة التي تتبعها.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          correctSentence: { type: Type.STRING, description: "الجملة الصحيحة الكاملة." },
+          scrambledWords: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "مصفوفة تحتوي على كلمات الجملة بترتيب عشوائي.",
+          },
+          explanation: { type: Type.STRING, description: "شرح بسيط لتركيب الجملة." }
+        },
+        required: ["correctSentence", "scrambledWords", "explanation"],
+      },
+    },
+  });
+
+  const json = JSON.parse(response.text);
+  // Ensure scrambled words are not the same as the correct sentence order
+  if (json.scrambledWords.join(' ') === json.correctSentence) {
+      json.scrambledWords.reverse();
+  }
+  return json as SentenceBuilderExercise;
 }

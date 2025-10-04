@@ -4,6 +4,7 @@ import SectionCard from './SectionCard';
 
 interface DashboardProps {
   onSelectView: (view: View) => void;
+  studentName: string;
 }
 
 const sections = [
@@ -30,7 +31,7 @@ const sections = [
   {
     view: View.READING_COMPREHENSION,
     title: 'تقوية القراءة',
-    description: 'اقرأ نصوصاً قصيرة وممتعة وجاوب على الأسئلة.',
+    description: 'اقرأ نصوصاً قصيرة وجاوب على الأسئلة.',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -47,9 +48,31 @@ const sections = [
       </svg>
     ),
   },
+  {
+    view: View.DICTATION,
+    title: 'الكاتب الدقيق',
+    description: 'استمع للكلمة واكتبها بشكل صحيح.',
+    icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.5 14h.01M4.5 14h.01M8 14h.01M11.5 14h.01M12 20.5a.5.5 0 01-.5-.5V19h1v1.0a.5.5 0 01-.5.5zM12 3a1 1 0 011 1v11a1 1 0 01-2 0V4a1 1 0 011-1z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 17h8v3H8v-3z" />
+        </svg>
+    ),
+  },
+  {
+    view: View.SENTENCE_BUILDER,
+    title: 'مهندس الجمل',
+    description: 'رتب الكلمات المبعثرة لتكوين جملة مفيدة.',
+    icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20l4-4m0 0l-4-4m4 4H3" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h1.5L8 16h1.5" />
+        </svg>
+    ),
+  },
 ];
 
-const mainSections = sections.slice(0, 4);
+const mainSections = sections.slice(0, 6);
 const utilitySections = [
     {
         view: View.HISTORY,
@@ -61,20 +84,30 @@ const utilitySections = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
         ),
+    },
+    {
+        view: View.ACHIEVEMENTS,
+        title: 'الأوسمة والإنجازات',
+        description: 'شاهد الأوسمة التي حصلت عليها.',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+          </svg>
+        ),
     }
 ];
 
 
-const Dashboard: React.FC<DashboardProps> = ({ onSelectView }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onSelectView, studentName }) => {
   return (
     <div className="text-center w-full">
       <div className="mb-8">
         <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-          أهلاً يا أبطال! أنا <span className="font-bold text-green-400">سماح</span>، وسأساعدكم في تعلم قواعد اللغة العربية بمتعة وحماس. هيا نختار تدريبنا اليوم!
+          أهلاً بك يا بطل <span className="font-bold text-white">{studentName}</span>! أنا <span className="font-bold text-green-400">سماح</span>، وسأساعدك في تعلم قواعد اللغة العربية بمتعة وحماس. هيا نختار تدريبنا اليوم!
         </p>
       </div>
 
-      <main className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {mainSections.map((section) => (
           <SectionCard
             key={section.title}

@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { generateFillInTheBlank } from '../services/geminiService';
-import { FillBlankExercise, FillBlankHistoryItem, View } from '../types';
+import { FillBlankExercise, FillBlankHistoryItem, HistoryItem, View } from '../types';
 import LoadingSpinner from './LoadingSpinner';
 import ExerciseContainer from './ExerciseContainer';
+import { triggerVibration } from '../App';
 
 interface FillInTheBlankProps {
   onBack: () => void;
-  addPoints: (amount: number) => void;
-  addHistoryItem: (exerciseType: View.FILL_IN_BLANK, item: FillBlankHistoryItem) => void;
+  onCorrectAnswer: () => void;
+  onIncorrectAnswer: () => void;
+  addHistoryItem: (item: HistoryItem) => void;
 }
 
 const TOTAL_EXERCISES = 100;
 
-const FillInTheBlank: React.FC<FillInTheBlankProps> = ({ onBack, addPoints, addHistoryItem }) => {
+const FillInTheBlank: React.FC<FillInTheBlankProps> = ({ onBack, onCorrectAnswer, onIncorrectAnswer, addHistoryItem }) => {
   const [exercise, setExercise] = useState<FillBlankExercise | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -22,6 +25,7 @@ const FillInTheBlank: React.FC<FillInTheBlankProps> = ({ onBack, addPoints, addH
 
   const fetchExercise = useCallback(async () => {
     setLoading(true);
+    setError(null);
     setExercise(null);
     setSelectedAnswer(null);
     setIsSubmitted(false);
@@ -33,6 +37,7 @@ const FillInTheBlank: React.FC<FillInTheBlankProps> = ({ onBack, addPoints, addH
       setExercise({ ...newExercise, options: shuffledOptions });
     } catch (error) {
       console.error("Failed to generate fill-in-the-blank exercise:", error);
+      setError("عذراً، حدث خطأ أثناء تحضير التدريب. يرجى المحاولة مرة أخرى.");
     } finally {
       setLoading(false);
     }
@@ -43,25 +48,27 @@ const FillInTheBlank: React.FC<FillInTheBlankProps> = ({ onBack, addPoints, addH
   }, [fetchExercise]);
 
   const handleNextExercise = () => {
-    if (exercise && selectedAnswer) {
-      const historyItem: FillBlankHistoryItem = { exercise, selectedAnswer };
-      addHistoryItem(View.FILL_IN_BLANK, historyItem);
-    }
+    triggerVibration();
     setExerciseCount(prev => (prev % TOTAL_EXERCISES) + 1);
-    fetchExercise();
   };
 
   const handleOptionClick = (option: string) => {
-    if (isSubmitted) return;
+    if (isSubmitted || !exercise) return;
+    triggerVibration();
     
-    const correct = option === exercise?.answer;
+    const correct = option === exercise.answer;
     setSelectedAnswer(option);
     setIsSubmitted(true);
     setIsCorrect(correct);
 
     if (correct) {
-      addPoints(10);
+      onCorrectAnswer();
+    } else {
+      onIncorrectAnswer();
     }
+
+    const historyItem: FillBlankHistoryItem = { type: View.FILL_IN_BLANK, exercise, selectedAnswer: option };
+    addHistoryItem(historyItem);
   };
 
   const getButtonClass = (option: string) => {
@@ -109,7 +116,15 @@ const FillInTheBlank: React.FC<FillInTheBlankProps> = ({ onBack, addPoints, addH
     <ExerciseContainer title="املأ الفراغ" onBack={onBack} exerciseNumber={exerciseCount}>
       <div className="flex-grow flex flex-col justify-center">
         {loading && <LoadingSpinner />}
-        {!loading && exercise && (
+        {error && (
+            <div className="text-center flex flex-col items-center gap-4">
+                <p className="text-red-400 text-lg">{error}</p>
+                <button onClick={fetchExercise} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    حاول مرة أخرى
+                </button>
+            </div>
+        )}
+        {!loading && !error && exercise && (
             <div className="w-full text-center flex flex-col items-center gap-8">
                 <div className="p-4 min-h-[80px] flex items-center justify-center">
                     {getSentenceWithContent()}

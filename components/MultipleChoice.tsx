@@ -1,26 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { generateMultipleChoice } from '../services/geminiService';
-import { MCQExercise, MCQHistoryItem, View } from '../types';
+import { MCQExercise, MCQHistoryItem, HistoryItem, View } from '../types';
 import LoadingSpinner from './LoadingSpinner';
 import ExerciseContainer from './ExerciseContainer';
+import { triggerVibration } from '../App';
 
 interface MultipleChoiceProps {
   onBack: () => void;
-  addPoints: (amount: number) => void;
-  addHistoryItem: (exerciseType: View.MULTIPLE_CHOICE, item: MCQHistoryItem) => void;
+  onCorrectAnswer: () => void;
+  onIncorrectAnswer: () => void;
+  addHistoryItem: (item: HistoryItem) => void;
 }
 
 const TOTAL_EXERCISES = 100;
 
-const MultipleChoice: React.FC<MultipleChoiceProps> = ({ onBack, addPoints, addHistoryItem }) => {
+const MultipleChoice: React.FC<MultipleChoiceProps> = ({ onBack, onCorrectAnswer, onIncorrectAnswer, addHistoryItem }) => {
   const [exercise, setExercise] = useState<MCQExercise | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [exerciseCount, setExerciseCount] = useState(1);
 
   const fetchExercise = useCallback(async () => {
     setLoading(true);
+    setError(null);
     setExercise(null);
     setSelectedAnswer(null);
     setIsSubmitted(false);
@@ -31,6 +35,7 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ onBack, addPoints, addH
       setExercise({ ...newExercise, options: shuffledOptions });
     } catch (error) {
       console.error("Failed to generate multiple choice exercise:", error);
+      setError("عذراً، حدث خطأ أثناء تحضير التدريب. يرجى المحاولة مرة أخرى.");
     } finally {
       setLoading(false);
     }
@@ -41,21 +46,22 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ onBack, addPoints, addH
   }, [fetchExercise]);
 
   const handleNextExercise = () => {
-    if (exercise && selectedAnswer) {
-      const historyItem: MCQHistoryItem = { exercise, selectedAnswer };
-      addHistoryItem(View.MULTIPLE_CHOICE, historyItem);
-    }
+    triggerVibration();
     setExerciseCount(prev => (prev % TOTAL_EXERCISES) + 1);
-    fetchExercise();
   }
 
   const handleOptionClick = (option: string) => {
-    if (isSubmitted) return;
+    if (isSubmitted || !exercise) return;
+    triggerVibration();
     setSelectedAnswer(option);
     setIsSubmitted(true);
-    if (option === exercise?.correctAnswer) {
-        addPoints(10);
+    if (option === exercise.correctAnswer) {
+        onCorrectAnswer();
+    } else {
+        onIncorrectAnswer();
     }
+    const historyItem: MCQHistoryItem = { type: View.MULTIPLE_CHOICE, exercise, selectedAnswer: option };
+    addHistoryItem(historyItem);
   };
 
   const getButtonClass = (option: string) => {
@@ -83,7 +89,15 @@ const MultipleChoice: React.FC<MultipleChoiceProps> = ({ onBack, addPoints, addH
     <ExerciseContainer title="اختر من متعدد" onBack={onBack} exerciseNumber={exerciseCount}>
       <div className="flex-grow flex flex-col justify-center">
         {loading && <LoadingSpinner />}
-        {!loading && exercise && (
+        {error && (
+            <div className="text-center flex flex-col items-center gap-4">
+                <p className="text-red-400 text-lg">{error}</p>
+                <button onClick={fetchExercise} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    حاول مرة أخرى
+                </button>
+            </div>
+        )}
+        {!loading && !error && exercise && (
           <div className="w-full flex flex-col items-center gap-8">
             <p className="text-2xl font-semibold text-center">{exercise.question}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
