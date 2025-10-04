@@ -8,6 +8,8 @@ interface EducationalCardsProps {
   onBack: () => void;
 }
 
+const TOTAL_CARDS = 100;
+
 const EducationalCards: React.FC<EducationalCardsProps> = ({ onBack }) => {
   const [card, setCard] = useState<EducationalCard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,21 +19,22 @@ const EducationalCards: React.FC<EducationalCardsProps> = ({ onBack }) => {
     setLoading(true);
     setCard(null);
     try {
-      const newCard = await generateEducationalCard();
+      const level = cardCount <= 50 ? 'مبتدئ' : 'متوسط';
+      const newCard = await generateEducationalCard(level);
       setCard(newCard);
     } catch (error) {
       console.error("Failed to generate educational card:", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [cardCount]);
 
   useEffect(() => {
     fetchCard();
   }, [fetchCard]);
 
   const handleNextCard = () => {
-    setCardCount(prev => (prev % 25) + 1);
+    setCardCount(prev => (prev % TOTAL_CARDS) + 1);
     fetchCard();
   };
 
